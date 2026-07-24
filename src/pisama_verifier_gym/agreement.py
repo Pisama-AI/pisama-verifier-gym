@@ -65,6 +65,7 @@ def load_verdict_rows(path: str | Path) -> list[dict[str, Any]]:
                 raise ValueError(msg) from exc
             if not isinstance(row, dict):
                 raise ValueError(f"line {line_number} is not a JSON object")
+            _validate_verdict_row(row, line_number)
             rows.append(row)
     return rows
 
@@ -132,10 +133,7 @@ def agreement_table(rows: Sequence[VerdictRow]) -> list[AgreementStats]:
 
 def verdict_balance(rows: Sequence[VerdictRow]) -> dict[str, VerdictBalance]:
     """Count yes, no, and abstention verdicts for each vendor."""
-    balance = {
-        vendor: {"yes": 0, "no": 0, "abstain": 0}
-        for vendor in vendor_names(rows)
-    }
+    balance = {vendor: {"yes": 0, "no": 0, "abstain": 0} for vendor in vendor_names(rows)}
 
     for row in rows:
         for vendor in balance:
@@ -164,6 +162,20 @@ def _vendor_verdicts(row: VerdictRow) -> Mapping[str, Any]:
     if not isinstance(value, Mapping):
         return {}
     return value
+
+
+def _validate_verdict_row(row: VerdictRow, line_number: int) -> None:
+    verdicts = row.get("per_vendor_verdicts")
+    if not isinstance(verdicts, Mapping):
+        raise ValueError(f"line {line_number} has no per_vendor_verdicts object")
+    for vendor, payload in verdicts.items():
+        if not isinstance(vendor, str) or not vendor:
+            raise ValueError(f"line {line_number} has an invalid vendor name")
+        if not isinstance(payload, Mapping) or "verdict" not in payload:
+            raise ValueError(f"line {line_number} has no verdict for vendor {vendor!r}")
+        verdict = payload["verdict"]
+        if verdict is not None and not isinstance(verdict, bool):
+            raise ValueError(f"line {line_number} has a non-boolean verdict for vendor {vendor!r}")
 
 
 def _pair_counts(

@@ -1,6 +1,11 @@
 import pytest
 
-from pisama_verifier_gym import load_builtin_json, read_datasheet, read_template
+from pisama_verifier_gym import (
+    load_builtin_json,
+    load_builtin_verdicts,
+    read_datasheet,
+    read_template,
+)
 
 
 def test_template_and_datasheet_are_packaged():
@@ -21,8 +26,17 @@ def test_json_artifacts_are_packaged():
 
 
 def test_unknown_asset_names_fail_clearly():
+    with pytest.raises(ValueError, match="unknown dataset"):
+        load_builtin_verdicts("missing")
+
     with pytest.raises(ValueError, match="unknown artifact"):
         load_builtin_json("missing")
 
     with pytest.raises(ValueError, match="unknown datasheet"):
         read_datasheet("missing")
+
+
+def test_asset_aliases_and_datasheet_suffix_are_supported():
+    assert len(load_builtin_verdicts("wildchat_v3_derailment")) == 97
+    assert load_builtin_json("judge_agreement")["artifact"] == "cross_model_judge_agreement"
+    assert "Verifier datasheet" in read_datasheet("derailment-wildchat.md")

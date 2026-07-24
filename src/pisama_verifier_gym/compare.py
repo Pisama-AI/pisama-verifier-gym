@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from math import isclose
 from typing import Any, Mapping
 
 
@@ -132,9 +133,9 @@ def _gate_delta(
 ) -> None:
     if delta is None:
         return
-    if threshold < 0 and delta < threshold:
+    if threshold < 0 and delta < threshold and not _same_boundary(delta, threshold):
         issues.append(_delta_issue(row, metric, delta, threshold))
-    if threshold > 0 and delta > threshold:
+    if threshold > 0 and delta > threshold and not _same_boundary(delta, threshold):
         issues.append(_delta_issue(row, metric, delta, threshold))
 
 
@@ -145,7 +146,7 @@ def _gate_abs_delta(
     threshold: float,
     issues: list[GateIssue],
 ) -> None:
-    if delta is not None and abs(delta) > threshold:
+    if delta is not None and abs(delta) > threshold and not _same_boundary(abs(delta), threshold):
         issues.append(_delta_issue(row, metric, delta, threshold))
 
 
@@ -163,7 +164,11 @@ def _gate_psa(
                 message=f"minimum PSA {row.candidate_psa_min:.4f} fell below floor {min_psa:.4f}",
             )
         )
-    if row.psa_delta is not None and row.psa_delta < -max_drop:
+    if (
+        row.psa_delta is not None
+        and row.psa_delta < -max_drop
+        and not _same_boundary(row.psa_delta, -max_drop)
+    ):
         issues.append(_delta_issue(row, "positive_specific_agreement", row.psa_delta, -max_drop))
 
 
@@ -175,13 +180,23 @@ def _delta_issue(row: ComparisonRow, metric: str, delta: float, threshold: float
     )
 
 
+def _same_boundary(value: float, threshold: float) -> bool:
+    return isclose(value, threshold, rel_tol=0.0, abs_tol=1e-12)
+
+
 def _metric_delta(
     baseline: Mapping[str, Any],
     candidate: Mapping[str, Any],
     metric: str,
 ) -> float | None:
-    before = _number((baseline.get("metrics") or {}).get(metric))
-    after = _number((candidate.get("metrics") or {}).get(metric))
+    baseline_metrics = baseline.get("metrics")
+    candidate_metrics = candidate.get("metrics")
+    before = (
+        _number(baseline_metrics.get(metric)) if isinstance(baseline_metrics, Mapping) else None
+    )
+    after = (
+        _number(candidate_metrics.get(metric)) if isinstance(candidate_metrics, Mapping) else None
+    )
     if before is None or after is None:
         return None
     return after - before
@@ -201,8 +216,11 @@ def _agreement_extreme(
     agreement = record.get("agreement")
     if not isinstance(agreement, Mapping):
         return None
+    pairwise = agreement.get("pairwise")
+    if not isinstance(pairwise, list):
+        return None
     values = []
-    for row in agreement.get("pairwise", []):
+    for row in pairwise:
         if isinstance(row, Mapping):
             value = _number(row.get(metric))
             if value is not None:
@@ -220,7 +238,10 @@ def _fingerprint(record: Mapping[str, Any]) -> str | None:
 
 def _verifier_map(artifact: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
     records: dict[str, Mapping[str, Any]] = {}
-    for record in artifact.get("verifiers", []):
+    verifiers = artifact.get("verifiers")
+    if not isinstance(verifiers, list):
+        return records
+    for record in verifiers:
         if isinstance(record, Mapping) and record.get("id"):
             records[str(record["id"])] = record
     return records

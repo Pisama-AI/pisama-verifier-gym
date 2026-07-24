@@ -122,9 +122,16 @@ pisama-verifier-gym export-calibration calibration_report.json \
 
 The validator fails hard when a verifier lacks rubric lineage, a dataset
 fingerprint, an input visibility policy, a lane policy, or when synthetic data
-can feed published metrics. The gate is intentionally fingerprint-aware: by
-default a candidate must be compared against the previous run for the same
+can feed published metrics. It also rejects duplicate verifier ids, negative or
+boolean sample counts, out-of-range unit metrics, and malformed visibility,
+lane, or publication contracts. The gate is intentionally fingerprint-aware:
+by default a candidate must be compared against the previous run for the same
 dataset fingerprint.
+
+Custom JSONL verdict exports are validated when loaded. Every row must contain
+a `per_vendor_verdicts` object, and each vendor verdict must be `true`, `false`,
+or `null`. Invalid rows fail with their source line number instead of silently
+changing the agreement denominator.
 
 ## Why This Exists
 
@@ -141,7 +148,9 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ruff check src tests
 mypy src/pisama_verifier_gym
-pytest -q
+xenon --max-absolute B --max-modules A --max-average A src/pisama_verifier_gym
+pylint --disable=all --enable=duplicate-code --min-similarity-lines=8 src/pisama_verifier_gym
+pytest -q --cov=pisama_verifier_gym --cov-branch --cov-fail-under=99
 python -m build
 ```
 

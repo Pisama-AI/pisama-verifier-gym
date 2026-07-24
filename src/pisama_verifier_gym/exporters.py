@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from math import isfinite
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -47,7 +48,7 @@ def export_calibration_report(
         llm_path = Path(llm_report)
         llm = _load_json(llm_path)
         source_reports.append(str(llm_path))
-        for detector, result in _selected_results(llm, sorted((llm.get("results") or {}).keys())):
+        for detector, result in _selected_results(llm, _result_names(llm)):
             verifiers.append(
                 _build_verifier(
                     detector=detector,
@@ -76,11 +77,13 @@ def positive_rich_manifest(artifact: Mapping[str, Any]) -> dict[str, Any]:
             continue
         suite = verifier.get("challenge_suite")
         if isinstance(suite, Mapping) and suite.get("positive_count"):
+            dataset = verifier.get("dataset")
+            fingerprint_id = dataset.get("fingerprint_id") if isinstance(dataset, Mapping) else None
             suites.append(
                 {
                     "verifier_id": verifier.get("id"),
                     "verifier_name": verifier.get("name"),
-                    "fingerprint_id": (verifier.get("dataset") or {}).get("fingerprint_id"),
+                    "fingerprint_id": fingerprint_id,
                     **suite,
                 }
             )
@@ -105,6 +108,13 @@ def _selected_results(
         if isinstance(value, Mapping):
             selected.append((detector, value))
     return selected
+
+
+def _result_names(report: Mapping[str, Any]) -> list[str]:
+    results = report.get("results")
+    if not isinstance(results, Mapping):
+        return []
+    return sorted(str(name) for name in results)
 
 
 def _build_verifier(
@@ -170,7 +180,7 @@ def _dataset_contract(report: Mapping[str, Any], detector: str) -> dict[str, Any
 
 
 def _metrics(result: Mapping[str, Any]) -> dict[str, Any]:
-    metrics: dict[str, Any] = {"eval_flags": result.get("eval_flags") or []}
+    metrics: dict[str, Any] = {"eval_flags": _eval_flags(result)}
     _copy_numbers(metrics, result, ("f1", "precision", "recall", "f1_ci_lower", "f1_ci_upper"))
     _copy_numbers(metrics, result, ("always_fire_f1",))
     _copy_integers(metrics, result, ("positive_count", "negative_count"))
@@ -193,7 +203,8 @@ def _challenge_suite(detector: str, sample_predictions: Any) -> dict[str, Any]:
         return {"status": "not_available", "positive_count": 0, "entries": []}
 
     rows = [
-        row for row in sample_predictions
+        row
+        for row in sample_predictions
         if isinstance(row, Mapping)
         and row.get("detection_type") == detector
         and row.get("expected") is True
@@ -241,26 +252,25 @@ def _dataset_name(report: Mapping[str, Any], detector: str) -> str:
 
 def _scope_claim(detector: str, result: Mapping[str, Any], kind: str) -> str:
     f1 = result.get("f1")
-    if isinstance(f1, int | float):
+    if _number(f1) is not None:
         return f"{kind} {detector} measured F1 {f1:.4f} on the declared fingerprint"
     return f"{kind} {detector} measured on the declared fingerprint"
 
 
 def _honest_reading(detector: str, result: Mapping[str, Any]) -> str:
-    flags = result.get("eval_flags") or []
+    flags = _eval_flags(result)
     f1 = result.get("f1")
     sample_count = result.get("sample_count")
     if flags:
         return f"{detector} has caveats in this run: {', '.join(map(str, flags))}."
-    if isinstance(f1, int | float) and isinstance(sample_count, int):
+    if _number(f1) is not None and _integer(sample_count) is not None:
         return f"{detector} measured F1 {f1:.4f} on n={sample_count}; read with the lane policy."
     return f"{detector} has an exported measurement; inspect metrics and lane policy before use."
 
 
 def _known_limits(result: Mapping[str, Any], suite: Mapping[str, Any], kind: str) -> list[str]:
     limits: list[str] = []
-    flags = result.get("eval_flags") or []
-    limits.extend(str(flag) for flag in flags)
+    limits.extend(_eval_flags(result))
     if suite.get("status") == "needs_more_positives":
         limits.append("positive-rich suite has fewer than 30 positive examples")
     if kind == "llm_judge":
@@ -282,7 +292,7 @@ def _synthetic_rows(source_composition: Mapping[str, Any]) -> int:
         if (
             _synthetic_source(name)
             and isinstance(payload, Mapping)
-            and isinstance(payload.get("rows"), int)
+            and _integer(payload.get("rows")) is not None
         )
     )
 
@@ -328,6 +338,15 @@ def _synthetic_source(name: object) -> bool:
     return "synthetic" in normalized or "synth" in normalized
 
 
+def _eval_flags(result: Mapping[str, Any]) -> list[str]:
+    value = result.get("eval_flags")
+    if isinstance(value, list):
+        return [str(flag) for flag in value]
+    if value is None:
+        return []
+    return [str(value)]
+
+
 def _generated_at(report: Mapping[str, Any]) -> str:
     value = report.get("calibrated_at") or report.get("timestamp") or report.get("run_date")
     if isinstance(value, str) and value.strip():
@@ -336,11 +355,14 @@ def _generated_at(report: Mapping[str, Any]) -> str:
 
 
 def _number(value: Any) -> float | None:
-    return float(value) if isinstance(value, int | float) else None
+    if not isinstance(value, int | float) or isinstance(value, bool):
+        return None
+    converted = float(value)
+    return converted if isfinite(converted) else None
 
 
 def _integer(value: Any) -> int | None:
-    return int(value) if isinstance(value, int) else None
+    return int(value) if isinstance(value, int) and not isinstance(value, bool) else None
 
 
 def _load_json(path: Path) -> dict[str, Any]:

@@ -2,8 +2,18 @@
 
 ## Unreleased
 
-- Enforce at least 95 percent statement coverage in CI.
-- Add contract, validation, file round-trip, and module entrypoint tests.
+- Reject malformed JSONL verdict rows with source line numbers.
+- Reject booleans masquerading as calibration numbers or counts.
+- Validate root metadata, unique verifier ids, metric ranges, counts,
+  visibility, lane policy, and publication contracts.
+- Make regression-gate boundary comparisons stable against floating-point
+  representation noise.
+- Make comparison and export helpers robust to malformed optional sections.
+- Fix the bare CLI invocation so its documented default agreement report runs.
+- Enforce 99 percent combined statement and branch coverage in CI.
+- Enforce B-or-better function complexity, A module and average complexity, and
+  zero duplicate-code findings.
+- Add contract, error-path, validation, file round-trip, and entrypoint tests.
 - Add CodeQL and pull request dependency review.
 
 ## 0.1.1

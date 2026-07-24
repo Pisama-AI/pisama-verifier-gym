@@ -31,7 +31,19 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check src tests
       - run: mypy src/pisama_verifier_gym
-      - run: pytest -q --cov=pisama_verifier_gym --cov-report=term --cov-fail-under=95
+      - run: xenon --max-absolute B --max-modules A --max-average A src/pisama_verifier_gym
+      - run: >-
+          pylint
+          --disable=all
+          --enable=duplicate-code
+          --min-similarity-lines=8
+          src/pisama_verifier_gym
+      - run: >-
+          pytest -q
+          --cov=pisama_verifier_gym
+          --cov-branch
+          --cov-report=term
+          --cov-fail-under=99
 
   package:
     name: Build and inspect distributions
