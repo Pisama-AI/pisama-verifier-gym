@@ -1,0 +1,20 @@
+name: Bug report
+description: Report a reproducible package defect.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Minimal reproducer
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Package and Python versions
+    validations:
+      required: true

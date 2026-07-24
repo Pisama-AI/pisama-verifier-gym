@@ -1,0 +1,414 @@
+{
+ "artifact": "cross_model_judge_agreement",
+ "metric": "cohen_kappa_pairwise",
+ "lane": "label_corpus (external lane only)",
+ "sample_floor": 30,
+ "synthetic_lanes_excluded": true,
+ "production_note": "Production detection runs on Anthropic models only. The multi-vendor panel is a labelling/calibration-lane construct. This artifact supports 'labels and rubrics are stable across judge model families', not 'three vendors run in production'.",
+ "vendor_models": {
+  "anthropic": "claude-sonnet-4-6",
+  "openai": "gpt-5.5",
+  "google": "gemini-2.5-flash-lite"
+ },
+ "coverage": [
+  {
+   "dataset": "hierarchical",
+   "detector": "redundant_delegation_conflict",
+   "n_rows": 200,
+   "providers": [
+    "anthropic"
+   ],
+   "n_cross_vendor_rows": 0,
+   "status": "excluded_single_model",
+   "reason": "single judge family; no cross-model pair"
+  },
+  {
+   "dataset": "hierarchical",
+   "detector": "silent_cascade",
+   "n_rows": 200,
+   "providers": [
+    "anthropic"
+   ],
+   "n_cross_vendor_rows": 0,
+   "status": "excluded_single_model",
+   "reason": "single judge family; no cross-model pair"
+  },
+  {
+   "dataset": "hierarchical",
+   "detector": "synthesis_failure",
+   "n_rows": 200,
+   "providers": [
+    "anthropic"
+   ],
+   "n_cross_vendor_rows": 0,
+   "status": "excluded_single_model",
+   "reason": "single judge family; no cross-model pair"
+  },
+  {
+   "dataset": "mast",
+   "detector": "derailment",
+   "n_rows": 869,
+   "providers": [],
+   "n_cross_vendor_rows": 0,
+   "status": "excluded_single_model",
+   "reason": "single judge family; no cross-model pair"
+  },
+  {
+   "dataset": "wildchat",
+   "detector": "derailment",
+   "n_rows": 100,
+   "providers": [
+    "anthropic",
+    "google",
+    "openai"
+   ],
+   "n_cross_vendor_rows": 97,
+   "status": "included",
+   "reason": ""
+  },
+  {
+   "dataset": "wildchat_v2",
+   "detector": "derailment",
+   "n_rows": 100,
+   "providers": [
+    "anthropic",
+    "google",
+    "openai"
+   ],
+   "n_cross_vendor_rows": 95,
+   "status": "included",
+   "reason": ""
+  },
+  {
+   "dataset": "wildchat_v3",
+   "detector": "derailment",
+   "n_rows": 97,
+   "providers": [
+    "anthropic",
+    "google",
+    "openai"
+   ],
+   "n_cross_vendor_rows": 95,
+   "status": "included",
+   "reason": ""
+  }
+ ],
+ "detectors": {
+  "derailment [wildchat]": {
+   "providers": [
+    "anthropic",
+    "google",
+    "openai"
+   ],
+   "n_rows": 100,
+   "verdict_balance": {
+    "anthropic": {
+     "no": 83,
+     "yes": 15,
+     "uncertain": 2
+    },
+    "google": {
+     "no": 86,
+     "yes": 12,
+     "uncertain": 2
+    },
+    "openai": {
+     "no": 63,
+     "uncertain": 28,
+     "yes": 9
+    }
+   },
+   "pairs": [
+    {
+     "vendor_a": "anthropic",
+     "vendor_b": "google",
+     "n": 96,
+     "raw_agreement": 0.8125,
+     "cohen_kappa": 0.20000000000000037,
+     "positive_specific_agreement": 0.3076923076923077,
+     "negative_specific_agreement": 0.891566265060241,
+     "confusion": {
+      "tt": 4,
+      "ff": 74,
+      "tf": 10,
+      "ft": 8
+     },
+     "below_floor": false,
+     "kappa_undefined": false
+    },
+    {
+     "vendor_a": "anthropic",
+     "vendor_b": "openai",
+     "n": 72,
+     "raw_agreement": 0.8472222222222222,
+     "cohen_kappa": 0.33333333333333287,
+     "positive_specific_agreement": 0.42105263157894735,
+     "negative_specific_agreement": 0.912,
+     "confusion": {
+      "tt": 4,
+      "ff": 57,
+      "tf": 6,
+      "ft": 5
+     },
+     "below_floor": false,
+     "kappa_undefined": false
+    },
+    {
+     "vendor_a": "google",
+     "vendor_b": "openai",
+     "n": 71,
+     "raw_agreement": 0.8309859154929577,
+     "cohen_kappa": 0.30278232405891997,
+     "positive_specific_agreement": 0.4,
+     "negative_specific_agreement": 0.9016393442622951,
+     "confusion": {
+      "tt": 4,
+      "ff": 55,
+      "tf": 7,
+      "ft": 5
+     },
+     "below_floor": false,
+     "kappa_undefined": false
+    }
+   ],
+   "dataset": "wildchat",
+   "superseded": true
+  },
+  "derailment [wildchat_v2]": {
+   "providers": [
+    "anthropic",
+    "google",
+    "openai"
+   ],
+   "n_rows": 100,
+   "verdict_balance": {
+    "anthropic": {
+     "no": 93,
+     "uncertain": 5,
+     "yes": 2
+    },
+    "google": {
+     "no": 94,
+     "yes": 5,
+     "uncertain": 1
+    },
+    "openai": {
+     "no": 68,
+     "uncertain": 26,
+     "yes": 6
+    }
+   },
+   "pairs": [
+    {
+     "vendor_a": "anthropic",
+     "vendor_b": "google",
+     "n": 94,
+     "raw_agreement": 0.925531914893617,
+     "cohen_kappa": -0.031347962382446005,
+     "positive_specific_agreement": 0.0,
+     "negative_specific_agreement": 0.9613259668508287,
+     "confusion": {
+      "tt": 0,
+      "ff": 87,
+      "tf": 2,
+      "ft": 5
+     },
+     "below_floor": false,
+     "kappa_undefined": false
+    },
+    {
+     "vendor_a": "anthropic",
+     "vendor_b": "openai",
+     "n": 74,
+     "raw_agreement": 0.9459459459459459,
+     "cohen_kappa": 0.47887323943661936,
+     "positive_specific_agreement": 0.5,
+     "negative_specific_agreement": 0.9714285714285714,
+     "confusion": {
+      "tt": 2,
+      "ff": 68,
+      "tf": 0,
+      "ft": 4
+     },
+     "below_floor": false,
+     "kappa_undefined": false
+    },
+    {
+     "vendor_a": "google",
+     "vendor_b": "openai",
+     "n": 73,
+     "raw_agreement": 0.8904109589041096,
+     "cohen_kappa": 0.14117647058823557,
+     "positive_specific_agreement": 0.2,
+     "negative_specific_agreement": 0.9411764705882353,
+     "confusion": {
+      "tt": 1,
+      "ff": 64,
+      "tf": 4,
+      "ft": 4
+     },
+     "below_floor": false,
+     "kappa_undefined": false
+    }
+   ],
+   "dataset": "wildchat_v2",
+   "superseded": true
+  },
+  "derailment [wildchat_v3]": {
+   "providers": [
+    "anthropic",
+    "google",
+    "openai"
+   ],
+   "n_rows": 97,
+   "verdict_balance": {
+    "anthropic": {
+     "no": 89,
+     "uncertain": 6,
+     "yes": 2
+    },
+    "google": {
+     "no": 95,
+     "yes": 2
+    },
+    "openai": {
+     "no": 93,
+     "uncertain": 2,
+     "yes": 2
+    }
+   },
+   "pairs": [
+    {
+     "vendor_a": "anthropic",
+     "vendor_b": "google",
+     "n": 91,
+     "raw_agreement": 0.9560439560439561,
+     "cohen_kappa": -0.022471910112355865,
+     "positive_specific_agreement": 0.0,
+     "negative_specific_agreement": 0.9775280898876404,
+     "confusion": {
+      "tt": 0,
+      "ff": 87,
+      "tf": 2,
+      "ft": 2
+     },
+     "below_floor": false,
+     "kappa_undefined": false
+    },
+    {
+     "vendor_a": "anthropic",
+     "vendor_b": "openai",
+     "n": 91,
+     "raw_agreement": 0.978021978021978,
+     "cohen_kappa": 0.0,
+     "positive_specific_agreement": 0.0,
+     "negative_specific_agreement": 0.9888888888888889,
+     "confusion": {
+      "tt": 0,
+      "ff": 89,
+      "tf": 2,
+      "ft": 0
+     },
+     "below_floor": false,
+     "kappa_undefined": false
+    },
+    {
+     "vendor_a": "google",
+     "vendor_b": "openai",
+     "n": 95,
+     "raw_agreement": 0.9578947368421052,
+     "cohen_kappa": -0.02150537634408657,
+     "positive_specific_agreement": 0.0,
+     "negative_specific_agreement": 0.978494623655914,
+     "confusion": {
+      "tt": 0,
+      "ff": 91,
+      "tf": 2,
+      "ft": 2
+     },
+     "below_floor": false,
+     "kappa_undefined": false
+    }
+   ],
+   "dataset": "wildchat_v3",
+   "superseded": false
+  }
+ },
+ "overall": {
+  "providers": [
+   "anthropic",
+   "google",
+   "openai"
+  ],
+  "n_rows": 97,
+  "verdict_balance": {
+   "anthropic": {
+    "no": 89,
+    "uncertain": 6,
+    "yes": 2
+   },
+   "google": {
+    "no": 95,
+    "yes": 2
+   },
+   "openai": {
+    "no": 93,
+    "uncertain": 2,
+    "yes": 2
+   }
+  },
+  "pairs": [
+   {
+    "vendor_a": "anthropic",
+    "vendor_b": "google",
+    "n": 91,
+    "raw_agreement": 0.9560439560439561,
+    "cohen_kappa": -0.022471910112355865,
+    "positive_specific_agreement": 0.0,
+    "negative_specific_agreement": 0.9775280898876404,
+    "confusion": {
+     "tt": 0,
+     "ff": 87,
+     "tf": 2,
+     "ft": 2
+    },
+    "below_floor": false,
+    "kappa_undefined": false
+   },
+   {
+    "vendor_a": "anthropic",
+    "vendor_b": "openai",
+    "n": 91,
+    "raw_agreement": 0.978021978021978,
+    "cohen_kappa": 0.0,
+    "positive_specific_agreement": 0.0,
+    "negative_specific_agreement": 0.9888888888888889,
+    "confusion": {
+     "tt": 0,
+     "ff": 89,
+     "tf": 2,
+     "ft": 0
+    },
+    "below_floor": false,
+    "kappa_undefined": false
+   },
+   {
+    "vendor_a": "google",
+    "vendor_b": "openai",
+    "n": 95,
+    "raw_agreement": 0.9578947368421052,
+    "cohen_kappa": -0.02150537634408657,
+    "positive_specific_agreement": 0.0,
+    "negative_specific_agreement": 0.978494623655914,
+    "confusion": {
+     "tt": 0,
+     "ff": 91,
+     "tf": 2,
+     "ft": 2
+    },
+    "below_floor": false,
+    "kappa_undefined": false
+   }
+  ]
+ }
+}
