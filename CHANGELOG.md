@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.1
+
 - Reject malformed JSONL verdict rows with source line numbers.
 - Reject booleans masquerading as calibration numbers or counts.
 - Validate root metadata, unique verifier ids, metric ranges, counts,
@@ -15,9 +17,6 @@
   zero duplicate-code findings.
 - Add contract, error-path, validation, file round-trip, and entrypoint tests.
 - Add CodeQL and pull request dependency review.
-
-## 0.1.1
-
 - Publish the canonical source repository and independent CI.
 - Add data provenance, contribution, security, and maintenance policies.
 - Remove private repository paths and named adjudicator metadata from the
