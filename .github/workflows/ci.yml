@@ -31,7 +31,7 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check src tests
       - run: mypy src/pisama_verifier_gym
-      - run: pytest -q
+      - run: pytest -q --cov=pisama_verifier_gym --cov-report=term --cov-fail-under=95
 
   package:
     name: Build and inspect distributions

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Enforce at least 95 percent statement coverage in CI.
+- Add contract, validation, file round-trip, and module entrypoint tests.
+- Add CodeQL and pull request dependency review.
+
 ## 0.1.1
 
 - Publish the canonical source repository and independent CI.
