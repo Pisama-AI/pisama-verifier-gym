@@ -25,27 +25,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI."""
     parser = _build_parser()
     args = parser.parse_args(argv)
-
-    if args.command == "agreement":
-        return _run_agreement(args)
-
-    if args.command == "validate":
-        return _run_validate(args)
-
-    if args.command == "compare":
-        return _run_compare(args)
-
-    if args.command == "gate":
-        return _run_gate(args)
-
-    if args.command == "render":
-        return _run_render(args)
-
-    if args.command == "export-calibration":
-        return _run_export_calibration(args)
-
-    parser.print_help()
-    return 0
+    runners = {
+        "agreement": _run_agreement,
+        "validate": _run_validate,
+        "compare": _run_compare,
+        "gate": _run_gate,
+        "render": _run_render,
+        "export-calibration": _run_export_calibration,
+    }
+    return runners[args.command](args)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -109,7 +97,7 @@ def _build_parser() -> argparse.ArgumentParser:
         help="detector to export; repeatable; defaults to Pisama's core verifier set",
     )
 
-    parser.set_defaults(command="agreement")
+    parser.set_defaults(command="agreement", path=None, json=False)
     return parser
 
 
@@ -207,14 +195,7 @@ def _print_table(
 ) -> None:
     print(f"rows: {row_count}  models: {', '.join(sorted(balance))}")
     print()
-    print(
-        f"{'vendor A':<26}"
-        f"{'vendor B':<26}"
-        f"{'usable n':>9}"
-        f"{'raw':>7}"
-        f"{'PSA':>7}"
-        f"{'kappa':>8}"
-    )
+    print(f"{'vendor A':<26}{'vendor B':<26}{'usable n':>9}{'raw':>7}{'PSA':>7}{'kappa':>8}")
     for stat in stats:
         psa = (
             f"{stat.positive_specific_agreement:.2f}"

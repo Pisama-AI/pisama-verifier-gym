@@ -142,25 +142,46 @@ def validate_artifact(artifact: Mapping[str, Any]) -> list[ValidationIssue]:
     data in published metrics unless the lane policy excludes it.
     """
     issues: list[ValidationIssue] = []
-
-    if artifact.get("artifact_type") != ARTIFACT_TYPE:
-        issues.append(_issue("artifact_type", f"must be {ARTIFACT_TYPE!r}"))
-    if artifact.get("schema_version") != SCHEMA_VERSION:
-        issues.append(_issue("schema_version", f"must be {SCHEMA_VERSION!r}"))
+    _validate_root(artifact, issues)
 
     verifiers = artifact.get("verifiers")
     if not isinstance(verifiers, list) or not verifiers:
         issues.append(_issue("verifiers", "must be a non-empty list"))
         return issues
 
+    _validate_verifiers(verifiers, issues)
+    return issues
+
+
+def _validate_root(
+    artifact: Mapping[str, Any],
+    issues: list[ValidationIssue],
+) -> None:
+    if artifact.get("artifact_type") != ARTIFACT_TYPE:
+        issues.append(_issue("artifact_type", f"must be {ARTIFACT_TYPE!r}"))
+    if artifact.get("schema_version") != SCHEMA_VERSION:
+        issues.append(_issue("schema_version", f"must be {SCHEMA_VERSION!r}"))
+    if not _non_empty(artifact.get("generated_at")):
+        issues.append(_issue("generated_at", "is required"))
+    _validate_source_reports(artifact.get("source_reports"), issues)
+
+
+def _validate_verifiers(
+    verifiers: list[Any],
+    issues: list[ValidationIssue],
+) -> None:
+    verifier_ids: set[str] = set()
     for index, record in enumerate(verifiers):
         path = f"verifiers[{index}]"
         if not isinstance(record, Mapping):
             issues.append(_issue(path, "must be an object"))
             continue
         _validate_verifier(record, path, issues)
-
-    return issues
+        verifier_id = record.get("id")
+        if isinstance(verifier_id, str) and verifier_id in verifier_ids:
+            issues.append(_issue(f"{path}.id", f"duplicates verifier id {verifier_id!r}"))
+        elif isinstance(verifier_id, str):
+            verifier_ids.add(verifier_id)
 
 
 def has_errors(issues: list[ValidationIssue]) -> bool:
@@ -180,8 +201,8 @@ def _validate_verifier(
         _validate_dataset(dataset, f"{path}.dataset", issues)
 
     visibility = _mapping(record.get("input_visibility"))
-    if visibility is not None and not _non_empty(visibility.get("policy")):
-        issues.append(_issue(f"{path}.input_visibility.policy", "is required"))
+    if visibility is not None:
+        _validate_visibility(visibility, f"{path}.input_visibility", issues)
 
     lane_policy = _mapping(record.get("lane_policy"))
     publication = _mapping(record.get("publication"))
@@ -199,6 +220,10 @@ def _validate_verifier(
     )
     if metrics is not None:
         _validate_metrics(metrics, f"{path}.metrics", issues)
+    if lane_policy is not None:
+        _validate_lane_policy(lane_policy, f"{path}.lane_policy", issues)
+    if publication is not None:
+        _validate_publication(publication, f"{path}.publication", issues)
 
     if dataset and lane_policy and publication:
         _validate_synthetic_publication(dataset, lane_policy, publication, path, issues)
@@ -233,8 +258,55 @@ def _validate_dataset(
         issues.append(_issue(f"{path}.name", "is required"))
     if not _non_empty(dataset.get("fingerprint_id")):
         issues.append(_issue(f"{path}.fingerprint_id", "is required"))
-    if dataset.get("total_rows") is not None and not isinstance(dataset.get("total_rows"), int):
-        issues.append(_issue(f"{path}.total_rows", "must be an integer when set"))
+    _validate_optional_count(dataset, "total_rows", path, issues)
+    _validate_optional_count(dataset, "synthetic_rows", path, issues)
+    total_rows = _integer(dataset.get("total_rows"))
+    synthetic_rows = _integer(dataset.get("synthetic_rows"))
+    if total_rows is not None and synthetic_rows is not None and synthetic_rows > total_rows:
+        issues.append(_issue(f"{path}.synthetic_rows", "cannot exceed total_rows"))
+
+
+def _validate_visibility(
+    visibility: Mapping[str, Any],
+    path: str,
+    issues: list[ValidationIssue],
+) -> None:
+    if not _non_empty(visibility.get("policy")):
+        issues.append(_issue(f"{path}.policy", "is required"))
+    raw_input_included = visibility.get("raw_input_included")
+    if raw_input_included is not None and not isinstance(raw_input_included, bool):
+        issues.append(_issue(f"{path}.raw_input_included", "must be a boolean when set"))
+    fields_seen = visibility.get("fields_seen")
+    if fields_seen is not None and not _string_list(fields_seen):
+        issues.append(_issue(f"{path}.fields_seen", "must be a list of non-empty strings when set"))
+
+
+def _validate_lane_policy(
+    lane_policy: Mapping[str, Any],
+    path: str,
+    issues: list[ValidationIssue],
+) -> None:
+    if not _string_list(lane_policy.get("published_metric_lanes")):
+        issues.append(_issue(f"{path}.published_metric_lanes", "must be a non-empty string list"))
+    if not isinstance(
+        lane_policy.get("synthetic_lanes_excluded_from_published_metrics"),
+        bool,
+    ):
+        issues.append(
+            _issue(
+                f"{path}.synthetic_lanes_excluded_from_published_metrics",
+                "must be a boolean",
+            )
+        )
+
+
+def _validate_publication(
+    publication: Mapping[str, Any],
+    path: str,
+    issues: list[ValidationIssue],
+) -> None:
+    if not isinstance(publication.get("published_metrics"), bool):
+        issues.append(_issue(f"{path}.published_metrics", "must be a boolean"))
 
 
 def _validate_metrics(
@@ -242,9 +314,47 @@ def _validate_metrics(
     path: str,
     issues: list[ValidationIssue],
 ) -> None:
-    sample_count = metrics.get("sample_count")
-    if sample_count is not None and not isinstance(sample_count, int):
-        issues.append(_issue(f"{path}.sample_count", "must be an integer when set"))
+    count_metrics = (
+        "sample_count",
+        "positive_count",
+        "negative_count",
+        "true_positives",
+        "false_positives",
+        "false_negatives",
+        "true_negatives",
+    )
+    for key in count_metrics:
+        _validate_optional_count(metrics, key, path, issues)
+
+    unit_metrics = (
+        "f1",
+        "precision",
+        "recall",
+        "f1_ci_lower",
+        "f1_ci_upper",
+        "always_fire_f1",
+        "optimal_threshold",
+    )
+    for key in unit_metrics:
+        value = metrics.get(key)
+        if value is not None and (_number(value) is None or not 0 <= float(value) <= 1):
+            issues.append(_issue(f"{path}.{key}", "must be a number between 0 and 1 when set"))
+
+
+def _validate_optional_count(
+    values: Mapping[str, Any],
+    key: str,
+    path: str,
+    issues: list[ValidationIssue],
+) -> None:
+    value = values.get(key)
+    if value is not None and (_integer(value) is None or value < 0):
+        issues.append(_issue(f"{path}.{key}", "must be a non-negative integer when set"))
+
+
+def _validate_source_reports(value: Any, issues: list[ValidationIssue]) -> None:
+    if value is not None and not _string_list(value, allow_empty=True):
+        issues.append(_issue("source_reports", "must be a list of non-empty strings when set"))
 
 
 def _validate_synthetic_publication(
@@ -269,8 +379,8 @@ def _validate_synthetic_publication(
 
 
 def _synthetic_rows(dataset: Mapping[str, Any]) -> int:
-    explicit = dataset.get("synthetic_rows")
-    if isinstance(explicit, int):
+    explicit = _integer(dataset.get("synthetic_rows"))
+    if explicit is not None:
         return explicit
 
     total = 0
@@ -279,7 +389,7 @@ def _synthetic_rows(dataset: Mapping[str, Any]) -> int:
         for name, payload in composition.items():
             if "synthetic" not in str(name).lower() and "synth" not in str(name).lower():
                 continue
-            if isinstance(payload, Mapping) and isinstance(payload.get("rows"), int):
+            if isinstance(payload, Mapping) and _integer(payload.get("rows")) is not None:
                 total += int(payload["rows"])
     return total
 
@@ -290,6 +400,22 @@ def _mapping(value: Any) -> Mapping[str, Any] | None:
 
 def _non_empty(value: Any) -> bool:
     return isinstance(value, str) and bool(value.strip())
+
+
+def _string_list(value: Any, *, allow_empty: bool = False) -> bool:
+    return (
+        isinstance(value, list)
+        and (allow_empty or bool(value))
+        and all(_non_empty(item) for item in value)
+    )
+
+
+def _integer(value: Any) -> int | None:
+    return int(value) if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _number(value: Any) -> float | None:
+    return float(value) if isinstance(value, int | float) and not isinstance(value, bool) else None
 
 
 def _issue(

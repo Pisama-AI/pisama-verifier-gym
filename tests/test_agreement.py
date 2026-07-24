@@ -19,10 +19,7 @@ def test_builtin_agreement_matches_datasheet():
         "gpt-5.5",
     ]
 
-    stats = {
-        (stat.vendor_a, stat.vendor_b): stat
-        for stat in agreement_table(rows)
-    }
+    stats = {(stat.vendor_a, stat.vendor_b): stat for stat in agreement_table(rows)}
 
     anthropic_google = stats[("claude-sonnet-4-6", "gemini-2.5-flash-lite")]
     assert_pair(anthropic_google, usable_n=91, raw=0.96, psa=0.0, kappa=-0.02)
