@@ -59,4 +59,4 @@ __all__ = [
     "write_artifact",
 ]
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"

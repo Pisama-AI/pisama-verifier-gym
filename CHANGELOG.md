@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## 0.1.2
+
+- Declare the licence as the PEP 639 SPDX expression `license = "MIT"` with
+  `license-files = ["LICENSE"]`, replacing the deprecated `{text = "MIT"}` table.
+  The wheel now carries `License-Expression: MIT` and `License-File: LICENSE`
+  instead of the free-text `License` field, and the LICENSE file ships inside
+  `dist-info/licenses/`.
+- Drop the `License :: OSI Approved :: MIT License` trove classifier. The
+  `pyproject.toml` specification deprecates `License ::` classifiers and permits
+  build tools to reject a project that sets both them and an SPDX expression;
+  setuptools already errors on that combination. The licence is not lost, it moves
+  into `License-Expression`.
+- Require `hatchling>=1.27` to build, the first release line that emits core
+  metadata 2.4 and reads `license-files` as a list of glob patterns.
+
 ## 0.1.1
 
 - Reject malformed JSONL verdict rows with source line numbers.
