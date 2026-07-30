@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.2.0
+
+- Mark the package as not under active external development. It continues
+  to be maintained internally for Pisama's own daily verifier-agreement
+  measurement, and still receives bugfixes as needed, but it is no longer
+  being grown as a public-facing product surface. Issues and pull requests
+  may not get prompt attention. The package remains functional; nothing
+  about its behavior changes in this release.
+- Change the `Development Status` trove classifier from `3 - Alpha` to
+  `7 - Inactive` to reflect the above.
+
 ## 0.1.2
 
 - Declare the licence as the PEP 639 SPDX expression `license = "MIT"` with

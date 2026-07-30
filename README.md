@@ -5,6 +5,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/Pisama-AI/pisama-verifier-gym/actions/workflows/ci.yml/badge.svg)](https://github.com/Pisama-AI/pisama-verifier-gym/actions/workflows/ci.yml)
 
+> **Status:** this package is not under active external development. Pisama
+> still uses it internally, daily, for our own verifier-agreement
+> measurement, and it still gets bugfixes as needed, but we are not growing
+> it as a public-facing product surface. It works and will keep working;
+> issues and pull requests may not get prompt attention.
+
 Audit harnesses for verifiers: LLM judges, reward functions, graders, and failure
 detectors. The package ships a verifier datasheet template, a worked WildChat
 derailment judge datasheet, sanitized backing artifacts, and a no-dependency
